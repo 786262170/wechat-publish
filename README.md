@@ -108,6 +108,12 @@ python3 scripts/auto-publish.py 排版.html 图片目录
 
 `doctor.py` 会检查 6 项（PicGo 安装 / Server 监听 / 图床配置 / token 有效 / 仓库可访问 / 存储路径就绪），任何一项失败都会输出对应的修复指引，是首次使用的最佳入口。
 
+## 作者
+
+- [@786262170](https://github.com/786262170)
+
 ## 许可证
 
-MIT
+MIT © 2026 wechat-publish contributors
+
+本项目的代码、脚本、SKILL.md 指令、排版指南均为原创表达。其中引用的通用设计原则（如「越大越轻」的字重法则、溢出分级处理）来自公开的排版设计传统，不属任何单一版权主体。
