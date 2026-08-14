@@ -5,7 +5,7 @@
 
 检查 6 项，任何一项失败都会给出对应的修复指引：
   1. PicGo 是否安装
-  2. PicGo Server 是否监听（默认 127.0.0.1:36677）
+  2. PicGo Server 是否监听（默认 127.0.0.1:36677）——若已安装但未运行，自动启动 PicGo
   3. 图床是否已配置（读 PicGo 配置）
   4. GitHub token 是否有效（若图床为 github/githubPlus）
   5. 图床仓库是否可访问
@@ -20,7 +20,9 @@
 import json
 import os
 import sys
+import time
 import platform
+import subprocess
 import urllib.request
 import urllib.error
 from pathlib import Path
@@ -64,6 +66,40 @@ def check_server():
         return True, None
     except Exception as e:
         return False, f"无法连接 {PICGO_SERVER}（{e.__class__.__name__}）"
+
+
+def is_picgo_running():
+    """检测 PicGo 进程是否在运行。返回 True/False/None（无法判断）。"""
+    sysname = platform.system()
+    try:
+        if sysname == "Darwin":
+            r = subprocess.run(["pgrep", "-x", "PicGo"], capture_output=True, timeout=5)
+            return r.returncode == 0
+        if sysname == "Windows":
+            r = subprocess.run(["tasklist"], capture_output=True, timeout=5)
+            return b"PicGo.exe" in r.stdout
+        r = subprocess.run(["pgrep", "-f", "PicGo"], capture_output=True, timeout=5)
+        return r.returncode == 0
+    except Exception:
+        return None
+
+
+def start_picgo():
+    """尝试启动 PicGo。返回 (ok, detail)。"""
+    sysname = platform.system()
+    try:
+        if sysname == "Darwin":
+            subprocess.run(["open", "-a", "PicGo"], timeout=10)
+            return True, "已执行 open -a PicGo"
+        if sysname == "Windows":
+            exe = Path(os.environ.get("LOCALAPPDATA", ""), "Programs", "PicGo", "PicGo.exe")
+            if exe.exists():
+                subprocess.Popen([str(exe)])
+                return True, f"已启动 {exe}"
+            return False, "未找到 PicGo.exe，请从开始菜单手动启动"
+        return False, "请手动启动 PicGo（AppImage）"
+    except Exception as e:
+        return False, f"启动失败：{e}"
 
 
 def load_picgo_config():
@@ -192,14 +228,34 @@ def main():
     if not ok:
         print(f"      → 安装命令：{hint}")
 
-    # 2. Server 监听
+    # 2. Server 监听（不通时：未运行则自动启动；已运行则提示开 Server）
     ok, err = check_server()
     results.append(ok)
     print(f"[2/6] PicGo Server 监听    {'✓' if ok else '✗'}  ({PICGO_SERVER})")
     if not ok:
-        print("      → PicGo 设置 → 设置 Server → 开启「Server」（端口 36677）")
-        print("      → 确保 PicGo 正在运行")
-        print(f"      → 原始错误：{err}")
+        running = is_picgo_running()
+        if running is False:
+            # PicGo 已安装但没运行 → 自动启动
+            print("      → 检测到 PicGo 未运行，尝试自动启动……")
+            s_ok, s_detail = start_picgo()
+            print(f"      → {s_detail}")
+            if s_ok:
+                # 等待 PicGo 启动并重测（最多等 15 秒）
+                print("      → 等待 PicGo 启动……")
+                for _ in range(5):
+                    time.sleep(3)
+                    ok, err = check_server()
+                    if ok:
+                        results[-1] = True
+                        print("      → ✓ 已启动，Server 正常监听")
+                        break
+                if not ok:
+                    print("      → PicGo 已启动但 Server 未监听，请手动开启：")
+        if not results[-1]:
+            if running is not False:
+                print("      → PicGo 进程状态未知或已运行但 Server 未开，请检查：")
+            print("      → PicGo 设置 → 设置 Server → 开启「Server」（端口 36677）")
+            print(f"      → 原始错误：{err}")
 
     # 3. 图床配置
     config, cfg_path = load_picgo_config()

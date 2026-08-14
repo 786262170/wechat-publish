@@ -51,6 +51,7 @@ Markdown 文章 → ① 排版 HTML（内联 CSS，主题化） → ② 配图 S
 ### Step 0：健康检查（首次使用必做）
 
 - 运行 `python3 scripts/doctor.py`，检查 6 项：PicGo 安装 / Server 监听 / 图床配置 / token 有效 / 仓库可访问 / 存储路径就绪。
+- **若 PicGo 已安装但未运行，doctor 会自动启动它**（`open -a PicGo`），并等待后重测 Server。
 - 任何一项失败，脚本会输出对应修复指引（安装命令、开启 Server 步骤、生成 token 链接等）。**把指引转述给用户，引导其完成配置后重跑**，直到全绿。
 - 存储路径缺失时，可用 `python3 scripts/doctor.py --fix-img` 自动创建（或引导用户手动建目录）。
 - 若用户无 PicGo，跳过上传，退化为「图片上传公众号素材库拿 `mmbiz.qpic.cn` URL」手动方案。
