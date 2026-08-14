@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeepSeek Harness 底层拆解 - 公众号排版（调查档案体）</title>
+</head>
+<body style="margin:0;padding:0;background:#E5E0D2;">
+
+<!-- 使用说明：
+     1. 图片先上传到图床（或公众号素材库），拿到 https:// 外链
+     2. 把下方 https://cdn.jsdelivr.net/gh/786262170/picgo-images@main/img/exhibit1-event-sourcing.png ~ https://cdn.jsdelivr.net/gh/786262170/picgo-images@main/img/fig4-seams.png 替换成对应 URL（可用 wechat-publish skill 的 scripts/auto-publish.py 自动上传+替换）
+     3. 浏览器打开本文件 → Cmd+A 全选 → Cmd+C 复制 → 粘贴到公众号编辑器（微信会自动转存外链图片）
+     注意：不要用本地文件路径（file:// 或相对路径），公众号粘贴时会丢失。 -->
+
+<!-- ===== 卷宗封面 ===== -->
+<section style="max-width:677px;margin:0 auto;padding:0;background:#F0E8D3;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;">
+  <!-- 档案角标 -->
+  <section style="padding:18px 20px 0;">
+    <span style="display:inline-block;background:#C8BFA2;color:#5A5344;font-family:Menlo,Consolas,monospace;font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:2px;">CASE NO. DSH-2026-0814</span>
+    <span style="float:right;display:inline-block;border:1.5px solid #B03A2E;color:#B03A2E;font-size:12px;font-weight:700;letter-spacing:5px;padding:4px 10px;">调查档案</span>
+  </section>
+  <!-- 标题 -->
+  <section style="padding:40px 28px 8px;text-align:center;">
+    <section style="font-size:30px;font-weight:900;color:#2B2620;letter-spacing:3px;line-height:1.4;margin-bottom:18px;">给 agent 装黑匣子</section>
+    <section style="display:inline-block;border-top:1.2px dashed #B03A2E;width:280px;margin-bottom:16px;"></section>
+    <section style="font-family:Menlo,Consolas,monospace;font-size:12px;color:#6B6350;letter-spacing:3px;margin-bottom:34px;">DEEPSEEK HARNESS 底层拆解 · 技术调查</section>
+  </section>
+  <!-- 摘要横线区 -->
+  <section style="padding:0 40px 26px;">
+    <section style="border-top:0.8px solid #A89B7D;padding-top:16px;">
+      <section style="font-size:13px;color:#5A5344;line-height:2.1;">
+        <section>调查对象：AI agent 深夜无人值守时的行为记录</section>
+        <section>关键证物：事件溯源会话 · 唯一循环 · 工具管线 · 沙箱三态</section>
+        <section>调查结论：事故可解释 &gt; 事故不发生</section>
+      </section>
+    </section>
+  </section>
+  <!-- 结案印章 -->
+  <section style="padding:0 40px 28px;text-align:center;">
+    <section style="display:inline-block;width:104px;height:104px;border:2.5px solid #B03A2E;border-radius:50%;padding-top:34px;box-sizing:border-box;opacity:0.85;">
+      <section style="font-size:15px;font-weight:700;color:#B03A2E;letter-spacing:2px;">结案</section>
+      <section style="font-family:Menlo,Consolas,monospace;font-size:8px;color:#B03A2E;letter-spacing:1px;margin-top:4px;">2026.08.14</section>
+    </section>
+  </section>
+  <!-- 归档条 -->
+  <section style="background:#2B2620;padding:14px 20px;">
+    <section style="font-family:Menlo,Consolas,monospace;font-size:10px;color:#F0E8D3;letter-spacing:3px;text-align:center;">FILE · EVIDENCE · FINDINGS</section>
+  </section>
+</section>
+
+<!-- ===== 正文（牛皮纸档案纸） ===== -->
+<section style="max-width:677px;margin:0 auto;padding:0;background:#F6F1E3;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;">
+
+  <!-- 引言 -->
+  <section style="padding:28px 24px 6px;">
+    <section style="background:#FFFFFF;border:1px solid #D9CFAF;border-left:4px solid #B03A2E;padding:18px 20px;">
+      <section style="font-family:Menlo,Consolas,monospace;font-size:9px;color:#B03A2E;letter-spacing:2px;margin-bottom:10px;">INVESTIGATION OPENING</section>
+      <section style="font-size:14px;color:#3A3A36;line-height:1.9;margin-bottom:10px;">有一个反直觉的事实：在 DeepSeek Harness（<span style="font-family:Menlo,Consolas,monospace;font-size:12px;background:#F6F1E3;border-radius:3px;padding:1px 5px;color:#B03A2E;">dsh</span>）里，不存在"聊天记录"这个一等公民。</section>
+      <section style="font-size:14px;color:#3A3A36;line-height:1.9;">你看到的那个聊天界面，是派生的。真正的数据本体，是一条 <span style="font-weight:700;">append-only 的事件日志</span>。</section>
+    </section>
+  </section>
+
+  <!-- 正文段落 -->
+  <section style="padding:16px 24px 0;">
+    <section style="font-size:14px;color:#3A3A36;line-height:1.9;letter-spacing:0.4px;margin-bottom:12px;">这不是一个实现细节，这是整个框架的地基。理解了它为什么放弃"存消息"、选择"存事件"，你几乎就能理解它后面所有的设计决策。</section>
+    <section style="font-size:14px;color:#3A3A36;line-height:1.9;letter-spacing:0.4px;">这篇文章不讲功能清单，讲底层机制。我会沿着一条主线走：<span style="font-weight:700;color:#2B2620;">一个 agent 框架，怎么把"AI 替你干活"这件事，变成可回放、可审计、可恢复的数据。</span></section>
+  </section>
+
+  <!-- 章节 1 -->
+  <section style="padding:24px 24px 4px;">
+    <section style="margin-bottom:12px;">
+      <span style="display:inline-block;background:#2B2620;color:#F0E8D3;font-family:Menlo,Consolas,monospace;font-size:9px;letter-spacing:2px;padding:3px 10px;border-radius:2px;">EXHIBIT 01</span>
+      <span style="display:inline-block;color:#B03A2E;font-family:Menlo,Consolas,monospace;font-size:9px;letter-spacing:1px;margin-left:8px;">事件溯源</span>
+    </section>
+    <section style="font-size:18px;font-weight:800;color:#2B2620;letter-spacing:0.5px;margin-bottom:12px;">地基：会话是日志，消息是投影</section>
+    <section style="width:44px;height:3px;background:#B03A2E;margin-bottom:14px;"></section>
+    <section style="font-size:14px;color:#3A3A36;line-height:1.9;letter-spacing:0.4px;margin-bottom:12px;">先说结论性的那句：dsh 的 Session 采用事件溯源。append-only 的日志是唯一真相源；模型看到的消息历史，是从日志里增量投影出来的视图。</section>
+    <section style="font-size:14px;color:#3A3A36;line-height:1.9;letter-spacing:0.4px;margin-bottom:12px;">为什么？因为"聊天记录"这个抽象撑不住 agent 的真实需求。agent 的会话里混着很多"不是消息"的东西：工具调用的开始、审批的问与答、turn 的边界、原始 token 流、压缩时刻、子代理的分叉点。这些东西一旦塞进扁平的消息模型，信息就丢了。</section>
+    <section style="font-size:14px;color:#3A3A36;line-height:1.9;letter-spacing:0.4px;margin-bottom:12px;">所以 dsh 把会话拆成了<span style="font-weight:700;">事件</span>。每个事件还带着三个结构化字段：<span style="font-family:Menlo,Consolas,monospace;font-size:12px;">sourceEventSeqs</span> 记录引用了哪些早先事件；<span style="font-family:Menlo,Consolas,monospace;font-size:12px;">surfaceOp</span> 标记新增还是替换；<span style="font-family:Menlo,Consolas,monospace;font-size:12px;">ignorable</span> 标记未知类型可否安全跳过——后者解决的是"日志格式会演进"这个现实问题。</section>
+    <section style="font-size:14px;color:#3A3A36;line-height:1.9;letter-spacing:0.4px;">这一步是理解后面一切的关键：<span style="font-weight:700;color:#B03A2E;">日志是全部，消息是视图。</span></section>
+  </section>
+
+  <!-- 配图 1：替换 https://cdn.jsdelivr.net/gh/786262170/picgo-images@main/img/exhibit1-event-sourcing.png 为图床 URL（粘贴时微信自动转存） -->
+  <section style="padding:18px 24px 0;">
+    <img src="https://cdn.jsdelivr.net/gh/786262170/picgo-images@main/img/exhibit1-event-sourcing.png" alt="事件溯源：日志是真相源，消息是投影" style="width:100%;border-radius:6px;display:block;" />
+  </section>
+
+  <!-- 四个能力 -->
+  <section style="padding:16px 24px 0;">
+    <section style="font-size:14px;color:#3A3A36;line-height:1.9;margin-bottom:12px;">这个设计直接催生了四个能力，每一个对应一个真实痛点。</section>
+    <section style="margin-bottom:12px;">
+      <section style="margin-bottom:10px;"><span style="display:inline-block;width:6px;height:6px;background:#B03A2E;border-radius:2px;margin-right:10px;vertical-align:2px;"></span><span style="font-size:13.5px;color:#3A3A36;line-height:1.85;"><span style="font-weight:700;color:#2B2620;">崩溃可恢复。</span>按 id 恢复，turn 接着走。更妙的是崩溃修复语义：日志里有 <span style="font-family:Menlo,Consolas,monospace;font-size:12px;">tool/call</span> 却没有结果时，恢复会合成 <span style="font-family:Menlo,Consolas,monospace;font-size:12px;color:#B03A2E;">TOOL_OUTCOME_UNKNOWN</span>，附风险提示——"是否重试取决于操作是否幂等，不要盲目重试"。它不替你猜，它把不确定性诚实地交给模型。</span></section>
+      <section style="margin-bottom:10px;"><span style="display:inline-block;width:6px;height:6px;background:#B03A2E;border-radius:2px;margin-right:10px;vertical-align:2px;"></span><span style="font-size:13.5px;color:#3A3A36;line-height:1.85;"><span style="font-weight:700;color:#2B2620;">压缩不删历史。</span>compaction 做的是 replace：追加新条目"遮住"旧节点，不删原始日志。压缩是为了省 token，不是为了毁证据。</span></section>
+      <section style="margin-bottom:10px;"><span style="display:inline-block;width:6px;height:6px;background:#B03A2E;border-radius:2px;margin-right:10px;vertical-align:2px;"></span><span style="font-size:13.5px;color:#3A3A36;line-height:1.85;"><span style="font-weight:700;color:#2B2620;">分叉只在稳定边界。</span>fork 只允许在"关闭的 turn"切分，保证被 fork 出去的历史是可独立成立的完整叙事。</span></section>
+      <section style="margin-bottom:0;"><span style="display:inline-block;width:6px;height:6px;background:#B03A2E;border-radius:2px;margin-right:10px;vertical-align:2px;"></span><span style="font-size:13.5px;color:#3A3A36;line-height:1.85;"><span style="font-weight:700;color:#2B2620;">请求可重建。</span>每个 request/header 记录完整请求快照，事后能精确重建"当时模型到底收到了什么"。</span></section>
+    </section>
+  </section>
+
+  <!-- 章节 2 -->
+  <section style="padding:24px 24px 4px;">
+    <section style="margin-bottom:12px;">
+      <span style="display:inline-block;background:#2B2620;color:#F0E8D3;font-family:Menlo,Consolas,monospace;font-size:9px;letter-spacing:2px;padding:3px 10px;border-radius:2px;">EXHIBIT 02</span>
+      <span style="display:inline-block;color:#B03A2E;font-family:Menlo,Consolas,monospace;font-size:9px;letter-spacing:1px;margin-left:8px;">驱动</span>
+    </section>
+    <section style="font-size:18px;font-weight:800;color:#2B2620;letter-spacing:0.5px;margin-bottom:12px;">整个框架只有一个循环，其余全是插件</section>
+    <section style="width:44px;height:3px;background:#B03A2E;margin-bottom:14px;"></section>
+    <section style="font-size:14px;color:#3A3A36;line-height:1.9;letter-spacing:0.4px;margin-bottom:12px;">dsh 里有一个包叫 <span style="font-family:Menlo,Consolas,monospace;font-size:12px;color:#B03A2E;">dsh-agent-loop</span>，文档里有一句话值得单独摘出来：<span style="font-weight:700;color:#2B2620;">这是整个 harness 里唯一包含具体循环逻辑的包。</span>其余一切——沙箱、审批、压缩、持久化、子代理、UI——都是挂在这个循环周围的插件。</section>
+    <section style="font-size:14px;color:#3A3A36;line-height:1.9;letter-spacing:0.4px;margin-bottom:12px;">"驱动"一个 agent 是怎么回事？核心是一个统一的 <span style="font-family:Menlo,Consolas,monospace;font-size:12px;">send()</span> 原语，带三个预设别名，对应三种输入方式：</section>
+    <section style="margin-bottom:14px;">
+      <section style="margin-bottom:10px;"><span style="display:inline-block;width:6px;height:6px;background:#B03A2E;border-radius:2px;margin-right:10px;vertical-align:2px;"></span><span style="font-size:13.5px;color:#3A3A36;line-height:1.85;"><span style="font-family:Menlo,Consolas,monospace;font-size:12px;color:#B03A2E;">followup()</span>——追加到"下一轮"FIFO 并唤醒：最普通的"接着聊"。</span></section>
+      <section style="margin-bottom:10px;"><span style="display:inline-block;width:6px;height:6px;background:#B03A2E;border-radius:2px;margin-right:10px;vertical-align:2px;"></span><span style="font-size:13.5px;color:#3A3A36;line-height:1.85;"><span style="font-family:Menlo,Consolas,monospace;font-size:12px;color:#B03A2E;">steer()</span>——追加到"下一步"inbox 并唤醒：插队式即时引导。</span></section>
+      <section style="margin-bottom:0;"><span style="display:inline-block;width:6px;height:6px;background:#B03A2E;border-radius:2px;margin-right:10px;vertical-align:2px;"></span><span style="font-size:13.5px;color:#3A3A36;line-height:1.85;"><span style="font-family:Menlo,Consolas,monospace;font-size:12px;color:#B03A2E;">inject()</span>——追加到"下一步"inbox 但不唤醒：静默注入，等 agent 因别的原因被唤醒时再用。</span></section>
+    </section>
+    <section style="font-size:14px;color:#3A3A36;line-height:1.9;letter-spacing:0.4px;margin-bottom:12px;">这三种语义区分了"排队等、插队催、塞进去但别吵醒"。而在 turn 边界，driver 会原子地"认领"输入——先发事件、再改投影，每个事件都可追溯。</section>
+    <section style="font-size:14px;color:#3A3A36;line-height:1.9;letter-spacing:0.4px;">还有一处体现"循环尽量薄"：模型调用成功后恰好锚定一条 <span style="font-family:Menlo,Consolas,monospace;font-size:12px;">assistant/message</span> 完成事件——因为<span style="font-weight:700;">消息历史的权威来源必须落在日志里，而不是飘在某个执行栈上。</span>栈会丢，日志不会。</section>
+  </section>
+
+  <!-- 配图 2：替换 https://cdn.jsdelivr.net/gh/786262170/picgo-images@main/img/exhibit2-driver-pipeline.png 为图床 URL -->
+  <section style="padding:18px 24px 0;">
+    <img src="https://cdn.jsdelivr.net/gh/786262170/picgo-images@main/img/exhibit2-driver-pipeline.png" alt="驱动原语 + 工具管线 + 分层作用域" style="width:100%;border-radius:6px;display:block;" />
+  </section>
+
+  <!-- 章节 3 -->
+  <section style="padding:24px 24px 4px;">
+    <section style="margin-bottom:12px;">
+      <span style="display:inline-block;background:#2B2620;color:#F0E8D3;font-family:Menlo,Consolas,monospace;font-size:9px;letter-spacing:2px;padding:3px 10px;border-radius:2px;">EXHIBIT 03</span>
+      <span style="display:inline-block;color:#B03A2E;font-family:Menlo,Consolas,monospace;font-size:9px;letter-spacing:1px;margin-left:8px;">工具</span>
+    </section>
+    <section style="font-size:18px;font-weight:800;color:#2B2620;letter-spacing:0.5px;margin-bottom:12px;">工具不是函数，是一条管线</section>
+    <section style="width:44px;height:3px;background:#B03A2E;margin-bottom:14px;"></section>
+    <section style="font-size:14px;color:#3A3A36;line-height:1.9;letter-spacing:0.4px;margin-bottom:12px;">每次工具调用都要穿过一条五段管线：<span style="font-family:Menlo,Consolas,monospace;font-size:12px;">pre-execute</span> → 单调 guards → <span style="font-family:Menlo,Consolas,monospace;font-size:12px;">execute</span> → <span style="font-family:Menlo,Consolas,monospace;font-size:12px;">post-execute</span> → <span style="font-family:Menlo,Consolas,monospace;font-size:12px;">result</span>。每个都是扩展点。三个细节体现功力：</section>
+    <section style="margin-bottom:14px;">
+      <section style="margin-bottom:10px;"><span style="display:inline-block;width:6px;height:6px;background:#B03A2E;border-radius:2px;margin-right:10px;vertical-align:2px;"></span><span style="font-size:13.5px;color:#3A3A36;line-height:1.85;"><span style="font-weight:700;color:#2B2620;">门禁与 guard 是两回事。</span>pre-execute 可拒绝可放行；而 guard 是单调的——只能拒绝，不可被翻案。把"可以商量"和"没得商量"分开，安全策略走后者。</span></section>
+      <section style="margin-bottom:10px;"><span style="display:inline-block;width:6px;height:6px;background:#B03A2E;border-radius:2px;margin-right:10px;vertical-align:2px;"></span><span style="font-size:13.5px;color:#3A3A36;line-height:1.85;"><span style="font-weight:700;color:#2B2620;">作用域是分层的。</span>全局工具层 vs agent 级 scope，可 shadow 可 restrict。同一个进程里，native agent 和 Code Mode agent 各看各的目录，互不干扰。</span></section>
+      <section style="margin-bottom:0;"><span style="display:inline-block;width:6px;height:6px;background:#B03A2E;border-radius:2px;margin-right:10px;vertical-align:2px;"></span><span style="font-size:13.5px;color:#3A3A36;line-height:1.85;"><span style="font-weight:700;color:#2B2620;">Code Mode 的权衡。</span>模型写代码调工具，但中间值是执行局部、不落日志——刻意为之，代价是可回放性打折。应对是：每个子调用仍发成对事件，保住"调了哪些工具"的审计线索。这种"明确知道在哪一步做了权衡、并写进文档"的态度，最让人信服。</span></section>
+    </section>
+  </section>
+
+  <!-- 章节 4 -->
+  <section style="padding:24px 24px 4px;">
+    <section style="margin-bottom:12px;">
+      <span style="display:inline-block;background:#2B2620;color:#F0E8D3;font-family:Menlo,Consolas,monospace;font-size:9px;letter-spacing:2px;padding:3px 10px;border-radius:2px;">EXHIBIT 04</span>
+      <span style="display:inline-block;color:#B03A2E;font-family:Menlo,Consolas,monospace;font-size:9px;letter-spacing:1px;margin-left:8px;">沙箱</span>
+    </section>
+    <section style="font-size:18px;font-weight:800;color:#2B2620;letter-spacing:0.5px;margin-bottom:12px;">沙箱不是"拒绝权限"，是"包装命令"</section>
+    <section style="width:44px;height:3px;background:#B03A2E;margin-bottom:14px;"></section>
+    <section style="font-size:14px;color:#3A3A36;line-height:1.9;letter-spacing:0.4px;margin-bottom:12px;">dsh 的思路更底层：<span style="font-family:Menlo,Consolas,monospace;font-size:12px;color:#B03A2E;">confine(argv, policy)</span> 返回一组<span style="font-weight:700;">包装后的 argv</span>——"用这个替代你自己原来的命令"。包装后的进程连同它 spawn 的一切子进程，都跑在受限环境里。这是"进程沙箱"和"文件过滤"的本质区别：前者约束执行体，后者只拦文件访问。</section>
+    <section style="font-size:14px;color:#3A3A36;line-height:1.9;letter-spacing:0.4px;margin-bottom:12px;">三档：<span style="font-family:Menlo,Consolas,monospace;font-size:12px;color:#B03A2E;">read-only</span> / <span style="font-family:Menlo,Consolas,monospace;font-size:12px;color:#B03A2E;">workspace-write</span> / <span style="font-family:Menlo,Consolas,monospace;font-size:12px;color:#B03A2E;">danger-full-access</span>，策略跟着每次调用走。最硬的一条是失败关闭：平台没有可用后端，直接抛 <span style="font-family:Menlo,Consolas,monospace;font-size:12px;">SANDBOX_UNAVAILABLE</span>，拒绝执行，绝不降级裸跑。</section>
+    <section style="font-size:14px;color:#3A3A36;line-height:1.9;letter-spacing:0.4px;margin-bottom:12px;">文档同样诚实：这个沙箱<span style="font-weight:700;">只管文件效应</span>。网络、进程、syscall、设备、凭据都不在词汇表里。要容器、微 VM、远程执行，得换掉整个能力实现，而不是加 provider。这种"清楚说明自己不做什么"的诚实，在开源项目里相当稀缺。</section>
+    <section style="font-size:14px;color:#3A3A36;line-height:1.9;letter-spacing:0.4px;">升级权限也不是"把沙箱拨宽一档"，而是一次带理由的新请求，走人工审批，审批结果成对记录进审计。批了这一次，不批下一次。</section>
+  </section>
+
+  <!-- 配图 3：替换 https://cdn.jsdelivr.net/gh/786262170/picgo-images@main/img/fig2-sandbox.png 为图床 URL -->
+  <section style="padding:18px 24px 0;">
+    <img src="https://cdn.jsdelivr.net/gh/786262170/picgo-images@main/img/fig2-sandbox.png" alt="沙箱三态：权限跟着每次调用走" style="width:100%;border-radius:6px;display:block;" />
+  </section>
+
+  <!-- 章节 5 -->
+  <section style="padding:24px 24px 4px;">
+    <section style="margin-bottom:12px;">
+      <span style="display:inline-block;background:#2B2620;color:#F0E8D3;font-family:Menlo,Consolas,monospace;font-size:9px;letter-spacing:2px;padding:3px 10px;border-radius:2px;">EXHIBIT 05</span>
+      <span style="display:inline-block;color:#B03A2E;font-family:Menlo,Consolas,monospace;font-size:9px;letter-spacing:1px;margin-left:8px;">扩展</span>
+    </section>
+    <section style="font-size:18px;font-weight:800;color:#2B2620;letter-spacing:0.5px;margin-bottom:12px;">三条缝，与一个被忽视的工程现实</section>
+    <section style="width:44px;height:3px;background:#B03A2E;margin-bottom:14px;"></section>
+    <section style="font-size:14px;color:#3A3A36;line-height:1.9;letter-spacing:0.4px;margin-bottom:12px;">单 agent 有天花板，dsh 用三条"缝"撑开它，三条缝遵循同一模式：<span style="font-weight:700;">接口定义与实现分离。</span></section>
+    <section style="margin-bottom:14px;">
+      <section style="margin-bottom:10px;"><span style="display:inline-block;width:6px;height:6px;background:#B03A2E;border-radius:2px;margin-right:10px;vertical-align:2px;"></span><span style="font-size:13.5px;color:#3A3A36;line-height:1.85;"><span style="font-weight:700;color:#2B2620;">子代理缝</span>——统一 API 委托子任务，provider 决定跑在本进程、另进程还是未来传输，调用方无感。</span></section>
+      <section style="margin-bottom:10px;"><span style="display:inline-block;width:6px;height:6px;background:#B03A2E;border-radius:2px;margin-right:10px;vertical-align:2px;"></span><span style="font-size:13.5px;color:#3A3A36;line-height:1.85;"><span style="font-weight:700;color:#2B2620;">工作流缝</span>——模型写编排脚本，扇出子代理分阶段并行，脚本只做协调。</span></section>
+      <section style="margin-bottom:0;"><span style="display:inline-block;width:6px;height:6px;background:#B03A2E;border-radius:2px;margin-right:10px;vertical-align:2px;"></span><span style="font-size:13.5px;color:#3A3A36;line-height:1.85;"><span style="font-weight:700;color:#2B2620;">目标缝</span>——一个 agent 挂持久目标，跨轮推进，用 revision 做 compare-and-set 防呆。</span></section>
+    </section>
+    <section style="font-size:14px;color:#3A3A36;line-height:1.9;letter-spacing:0.4px;margin-bottom:12px;">真正让我觉得"认真做过工程"的，是工作流的失败纪律：<span style="font-family:Menlo,Consolas,monospace;font-size:12px;">fatal</span> 错误逃逸出 <span style="font-family:Menlo,Consolas,monospace;font-size:12px;">parallel()/pipeline()</span>；而子代理正常返回了非 completed 结果，不是故障——<span style="font-family:Menlo,Consolas,monospace;font-size:12px;">agent()</span> 返回 null，让脚本自己处理。<span style="font-weight:700;color:#2B2620;">基础设施的错，和任务的正常失败，不是一回事。</span>前者炸出来，后者交给编排逻辑。</section>
+    <section style="font-size:14px;color:#3A3A36;line-height:1.9;letter-spacing:0.4px;">最后说一个最容易被忽略的工程现实：<span style="font-weight:700;">KV cache 友好性。</span>dsh 每个模块文档都有 "KV Cache effect" 小节。因为前缀缓存是真实成本：历史字节保持稳定，推理就能复用前缀。这就是为什么压缩要"遮住"而不是"重排"——重排会让整个后续全部失效。一个框架把"对 KV cache 的影响"当作每个功能的设计约束来记录，说明它想的不只是"能不能跑"，而是"跑起来贵不贵"。</section>
+  </section>
+
+  <!-- 配图 4：替换 https://cdn.jsdelivr.net/gh/786262170/picgo-images@main/img/fig4-seams.png 为图床 URL -->
+  <section style="padding:18px 24px 0;">
+    <img src="https://cdn.jsdelivr.net/gh/786262170/picgo-images@main/img/fig4-seams.png" alt="三条缝：子代理 / 工作流 / 持久目标" style="width:100%;border-radius:6px;display:block;" />
+  </section>
+
+  <!-- 收尾 -->
+  <section style="padding:24px 24px 8px;">
+    <section style="font-size:14px;color:#3A3A36;line-height:1.9;letter-spacing:0.4px;margin-bottom:12px;">回头看，dsh 的设计有一条清晰的主线：</section>
+    <section style="font-size:14px;color:#3A3A36;line-height:1.9;letter-spacing:0.4px;margin-bottom:12px;">会话做成事件日志，是为了<span style="font-weight:700;">可回放</span>；循环做成唯一且薄，是为了<span style="font-weight:700;">可替换</span>；工具做成管线加分层作用域，是为了<span style="font-weight:700;">可拦截</span>；沙箱做成包装 argv 加失败关闭，是为了<span style="font-weight:700;">可约束</span>；三条缝加 KV cache 记录，是为了<span style="font-weight:700;">可扩展且不失控的成本</span>。</section>
+    <section style="font-size:14px;color:#3A3A36;line-height:1.9;letter-spacing:0.4px;">这些词——回放、替换、拦截、约束、成本——都不是模型的能力，是 harness 的职责。</section>
+  </section>
+
+  <!-- 结论卡 -->
+  <section style="padding:16px 24px 0;">
+    <section style="background:#2B2620;padding:22px 24px;">
+      <section style="font-family:Menlo,Consolas,monospace;font-size:10px;color:#B03A2E;letter-spacing:2px;margin-bottom:10px;">FINDINGS</section>
+      <section style="font-size:15px;font-weight:700;color:#F0E8D3;line-height:1.9;">模型的强，会继续涨。<br>而 harness 决定了一件事：当 AI 在深夜替你干活，第二天早上，你能不能说清它干了什么、凭什么干、花了多少。</section>
+    </section>
+  </section>
+
+  <!-- 结尾归档 -->
+  <section style="padding:20px 24px 30px;">
+    <section style="background:#2B2620;padding:18px 22px;text-align:center;">
+      <section style="font-family:Menlo,Consolas,monospace;font-size:10px;color:#B03A2E;letter-spacing:2px;margin-bottom:8px;">END OF RECORD</section>
+      <section style="font-size:11px;color:#8A8372;line-height:1.8;">DeepSeek Harness 底层拆解 · 2026-08-14</section>
+      <section style="font-size:11px;color:#8A8372;line-height:1.8;">github.com/deepseek-ai/deepseek-harness</section>
+    </section>
+  </section>
+
+</section>
+
+</body>
+</html>

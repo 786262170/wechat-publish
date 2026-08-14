@@ -6,11 +6,13 @@ __pycache__/
 *.pyc
 *.pyo
 
-# 生成产物
+# 生成产物（脚本输出的临时 _final.html）
 *_final.html
-*.png
-*.svg
 
 # 编辑器
 .vscode/
 .idea/
+
+# 例外：例文库里的成品样例需要提交（含配图 PNG/SVG）
+!references/examples/
+!references/examples/**

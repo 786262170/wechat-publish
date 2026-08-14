@@ -146,6 +146,28 @@ Markdown 文章 → ① 排版 HTML（内联 CSS，主题化） → ② 配图 S
 - 微信会后台自动转存外链图片到其图库。
 - 发布后更新 `04_发布记录/` 下的发布记录。
 
+### Step 6：归档成品到例文库（让 skill 越用越强）
+
+发布完成后，把成品归档进 `references/examples/`，作为下一个同类文章的参考：
+
+- 创建 `references/examples/YYYY-MM-DD-slug/` 目录，放入：
+  - `排版.html`（最终成品，含图片 URL）
+  - `meta.md`（文章类型、视觉主题、可复用元素、配图清单、踩坑记录）
+  - `assets/`（可选，配图 PNG）
+- 用 `python3 scripts/manage-examples.py add <目录>` 归档，或手动复制。
+- 踩坑记录同步回写 `references/layout-guide.md` 的「已知坑清单」。
+- 库超 20 个样例时，`python3 scripts/manage-examples.py prune` 修剪最旧 5 个（需用户确认）。
+
+## 成功标准
+
+| 环节 | 成功 | 失败 |
+|---|---|---|
+| 排版 HTML | 全内联样式、含 `__IMAGE_N__` 占位、主题匹配内容 | 有 class/渐变/伪元素，或主题与内容脱节 |
+| 配图 | SVG→PNG 成功、OCR+像素检测无溢出、中文渲染正常 | 文字溢出、豆腐块、尺寸错误 |
+| 上传 | doctor 全绿、占位符 0 残留、图片 URL 可访问 | PicGo 失败、占位未替换、URL 404 |
+| 发布 | `_final.html` 可复制、微信转存成功 | 图片丢失、样式被过滤 |
+| 归档 | 成品进例文库、meta.md 完整 | 成品未归档（技能不增长） |
+
 ## 触发词速查
 
 公众号排版 / 一键复制 / 图文排版 / 配图 / 封面图 / PicGo / 图床 / 选题卡 / 素材卡

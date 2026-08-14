@@ -14,17 +14,20 @@
 - **配图质量保障**：SVG 手绘 + 文字溢出自动检测（Vision OCR + 像素级复核）
 - **一键发布**：PicGo 图床自动上传 + 占位符自动替换，生成 `_final.html`
 - **环境体检**：doctor.py 首次引导 + 自动启动 PicGo
+- **自增长例文库**：成品归档 + 库管理，越用越强
 
 ## 目录结构
 
 ```
 wechat-publish/
-├── SKILL.md                 # 技能指令（触发条件 + 6 步工作流 + 6 条硬约束）
+├── SKILL.md                 # 技能指令（编排 + 7 步工作流 + 成功标准）
 ├── scripts/
 │   ├── auto-publish.py      # PicGo 上传 + 占位替换（三种调用方式）
-│   └── doctor.py            # 健康检查 + 首次使用引导（6 项体检）
+│   ├── doctor.py            # 健康检查 + 首次使用引导（6 项体检）
+│   └── manage-examples.py   # 成品例文库管理（统计/归档/修剪）
 ├── references/
-│   └── layout-guide.md      # 排版设计指南（主题推导方法论 + 多主题案例 + SVG 溢出检测）
+│   ├── layout-guide.md      # 排版设计指南（主题推导方法论 + 多主题案例 + SVG 溢出检测）
+│   └── examples/            # 成品例文库（越用越强）
 └── README.md
 ```
 
