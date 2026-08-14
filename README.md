@@ -19,7 +19,7 @@ wechat-publish/
 ├── scripts/
 │   └── auto-publish.py      # PicGo 上传 + 占位替换（三种调用方式）
 ├── references/
-│   └── layout-guide.md      # 档案体设计规范 + SVG 溢出检测方法论
+│   └── layout-guide.md      # 排版设计指南（主题推导方法论 + 多主题案例 + SVG 溢出检测）
 └── README.md
 ```
 

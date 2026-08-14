@@ -17,7 +17,7 @@ description: 公众号（WeChat Official Account）文章排版与发布管线�
 ## 工作流总览
 
 ```
-Markdown 文章 → ① 排版 HTML（内联 CSS，档案体） → ② 配图 SVG→PNG → ③ PicGo 上传+替换 → ④ 复制发布
+Markdown 文章 → ① 排版 HTML（内联 CSS，主题化） → ② 配图 SVG→PNG → ③ PicGo 上传+替换 → ④ 复制发布
 ```
 
 ## 关键约束（务必遵守）
@@ -25,7 +25,7 @@ Markdown 文章 → ① 排版 HTML（内联 CSS，档案体） → ② 配图 S
 1. **公众号编辑器只认内联样式**：所有 CSS 写进 `style=""` 属性，不用 `<style>` 标签、不用 class、不用 `::before/::after` 伪元素、不用 CSS 渐变（易被过滤）。警示条纹等效果用「色块拼接」实现。
 2. **图片必须走 URL**：公众号粘贴 HTML 时只认 `https://` 外链或 `mmbiz.qpic.cn` 图库链接。本地路径（`file://`、相对路径）一律丢失。
 3. **图片占位用统一 token**：HTML 里用 `__IMAGE_N__` 作占位符，交给脚本自动替换，避免手动错位。
-4. **排版要有独创性**：不要套用通用「卡片堆叠」模板。让排版形式服务内容叙事（例如「事故调查档案体」「飞行记录仪体」），做出有记忆点的视觉。
+4. **排版要有独创性，主题必须匹配内容**：不要套用通用「卡片堆叠」模板。按文章的情绪/意象推导视觉主题（调查→档案体、系统→记录仪体、终端→代码体…），见 `references/layout-guide.md` 的「通用方法论」。主色来自意象本身的真实颜色，章节编号方式主题化。
 5. **中文渲染验证**：SVG 转 PNG 后，用 headless Chromium 对比渲染差异（差异应 < 5%），或用 OCR 抽查，确保中文不是豆腐块。
 6. **文字溢出检测**：手写 SVG 靠肉眼估文字宽度几乎必溢出，必须用工具检测（详见 `references/layout-guide.md`）。
 
@@ -55,7 +55,7 @@ Markdown 文章 → ① 排版 HTML（内联 CSS，档案体） → ② 配图 S
 
 ### Step 2：生成排版 HTML
 
-- 参考 `references/layout-guide.md` 的档案体设计规范。
+- 参考 `references/layout-guide.md`：先按「① 通用方法论」从文章内容推导视觉主题，再套对应主题的组件与配色（档案体是案例之一，非唯一）。
 - 全内联样式，正文宽 677px，字号 14–15px，行高 1.85–1.9。
 - 图片处用 `<img src="__IMAGE_N__" alt="..." style="width:100%;border-radius:6px;display:block;" />`。
 - 顶部放 HTML 注释说明使用步骤。
