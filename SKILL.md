@@ -20,6 +20,27 @@ description: 公众号（WeChat Official Account）文章排版与发布管线�
 Markdown 文章 → ① 排版 HTML（内联 CSS，主题化） → ② 配图 SVG→PNG → ③ PicGo 上传+替换 → ④ 复制发布
 ```
 
+## 技能编排（与其他 skill 链式协作）
+
+本 skill 是「编排者」，负责把发布管线串起来，但**具体环节应委托给更擅长的 skill**，不要自己全栈实现。
+
+执行到对应环节时，用 `skill` 工具加载被委托的 skill，遵循其指令完成该环节，再把结果接回本管线。
+
+| 环节 | 委托给 | 触发条件 | 本 skill 负责什么 |
+|---|---|---|---|
+| 文章创作 | `blog-writer`（个人风格）/ `research-paper-writer`（学术）/ `copywriting`（营销文案） | 需要写/重写文章正文时 | 只做发布，不抢写作的活 |
+| 排版视觉 & 配图 | `frontend-design` | 需要设计排版主题、画 SVG 配图时 | 提供公众号兼容红线（内联样式等），验收视觉产出 |
+| Obsidian vault 管理 | `obsidian-cli` | 读写 vault、验证双链、建选题/素材卡时 | 提供目录约定（01_选题库 等结构） |
+| 环境体检 & 图床上传 | **本 skill 自己** | PicGo 检测、上传、占位替换 | 这是本 skill 的独有能力，不外委 |
+| SVG 溢出检测 | 本 skill 自己 | 配图完成后 | `references/layout-guide.md` 的方法论 |
+
+**编排原则**：
+
+1. **先问「有没有更擅长的 skill」，有则委托，无则自己做。** 不要重复造轮子。
+2. **委托时不丢上下文**：把本环节的输入（文章主题、目录路径、目标读者）连同委托一起交代清楚。
+3. **本 skill 的边界**：发布管线本身——主题推导框架、公众号兼容约束、PicGo 自动化、溢出检测。这四块是本 skill 不可外委的核心，其余尽量委托。
+4. **若委托的 skill 不存在或未安装**：不要卡住，退化为本 skill 自己完成，并在产出里注明「未使用 X skill，效果可能打折」。
+
 ## 关键约束（务必遵守）
 
 1. **公众号编辑器只认内联样式**：所有 CSS 写进 `style=""` 属性，不用 `<style>` 标签、不用 class、不用 `::before/::after` 伪元素、不用 CSS 渐变（易被过滤）。警示条纹等效果用「色块拼接」实现。
@@ -58,11 +79,13 @@ Markdown 文章 → ① 排版 HTML（内联 CSS，主题化） → ② 配图 S
 
 ### Step 1：撰写/获取文章
 
+- **委托给 `blog-writer` / `research-paper-writer` / `copywriting`**（按文章类型选），除非用户明确只要排版。
 - 文章本体存 `03_草稿/`，Markdown，带 YAML frontmatter（title/type/status/tags）。
 - 高质量技术文应有底层机制，不止罗列功能。写清「为什么这么设计」。
 
 ### Step 2：生成排版 HTML
 
+- **委托给 `frontend-design`** 做视觉设计与主题推导；本 skill 提供公众号兼容红线（下方「关键约束」）并验收。
 - 参考 `references/layout-guide.md`：先按「① 通用方法论」从文章内容推导视觉主题，再套对应主题的组件与配色（档案体是案例之一，非唯一）。
 - 全内联样式，正文宽 677px，字号 14–15px，行高 1.85–1.9。
 - 图片处用 `<img src="__IMAGE_N__" alt="..." style="width:100%;border-radius:6px;display:block;" />`。
@@ -70,6 +93,7 @@ Markdown 文章 → ① 排版 HTML（内联 CSS，主题化） → ② 配图 S
 
 ### Step 3：生成配图
 
+- **委托给 `frontend-design`** 做 SVG 视觉创作；本 skill 负责溢出检测与中文渲染验证（这是本 skill 不可外委的质量把关）。
 - SVG 手绘（黑匣子/档案/记录仪等主题），尺寸 900px 宽。
 - 用 `rsvg-convert -w 900 in.svg -o out.png` 转 PNG。
 - **⚠️ 必做：文字溢出检测**（详见 `references/layout-guide.md`「SVG 文字溢出检测」）。三步：① 用 macOS Vision OCR 定位每段文字边界框；② 判断 `x+w` 是否超画布/卡片；③ OCR 误报时用 Pillow 像素级复核。长英文词一律「中文大标题 + Menlo 11px 英文小字」，卡片并排先算坐标防重叠。
