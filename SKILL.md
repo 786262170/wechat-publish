@@ -29,10 +29,27 @@ Markdown 文章 → ① 排版 HTML（内联 CSS，主题化） → ② 配图 S
 | 环节 | 委托给 | 触发条件 | 本 skill 负责什么 |
 |---|---|---|---|
 | 文章创作 | `blog-writer`（个人风格）/ `research-paper-writer`（学术）/ `copywriting`（营销文案） | 需要写/重写文章正文时 | 只做发布，不抢写作的活 |
-| 排版视觉 & 配图 | `frontend-design` | 需要设计排版主题、画 SVG 配图时 | 提供公众号兼容红线（内联样式等），验收视觉产出 |
+| 排版 HTML 视觉设计 | `frontend-design` | 设计排版主题、HTML 视觉时 | 提供公众号兼容红线（内联样式等），验收视觉产出 |
+| 配图生成（SVG 插图/图表） | **⚠️ 无对口 skill，需检测询问** | 需要生成配图时 | 见下方「配图与裁剪的处理」 |
+| 图片裁剪/缩放 | **⚠️ 无对口 skill，可用 ffmpeg/sips 兜底** | 封面裁 2.35:1、裁白边、缩尺寸时 | 见下方「配图与裁剪的处理」 |
 | Obsidian vault 管理 | `obsidian-cli` | 读写 vault、验证双链、建选题/素材卡时 | 提供目录约定（01_选题库 等结构） |
 | 环境体检 & 图床上传 | **本 skill 自己** | PicGo 检测、上传、占位替换 | 这是本 skill 的独有能力，不外委 |
 | SVG 溢出检测 | 本 skill 自己 | 配图完成后 | `references/layout-guide.md` 的方法论 |
+
+### 配图与裁剪的处理（当前无对口 skill）
+
+**配图生成**：`frontend-design` 的定位是「前端界面设计」，**不是**图片/插图生成，别勉强它画 PNG 配图。处理顺序：
+
+1. 先检测是否有对口 skill（如图像生成、插图、图表类），有则委托。
+2. 无对口 skill 时，**如实告知用户**「当前没有配图生成 skill」，给两个选择：① 安装对口 skill；② 本 skill 用「手写 SVG」方式兜底生成配图（这是当前已验证可行的做法，见 `references/layout-guide.md`）。
+
+**图片裁剪/缩放**：无对口 skill，用命令行工具兜底，不委托：
+
+- 封面裁 2.35:1、缩尺寸：`ffmpeg`（`ffmpeg-video-editor` 技能的命令可用）或 `sips`（macOS 内置）
+- 裁白边：`ffmpeg` 的 crop filter 或 `sips -c`
+- 示例：`ffmpeg -i in.png -vf "crop=900:383:0:0" out.png`（裁剪）；`sips -z 383 900 in.png`（缩放到 900×383）
+
+
 
 **编排原则**：
 
@@ -95,7 +112,7 @@ Markdown 文章 → ① 排版 HTML（内联 CSS，主题化） → ② 配图 S
 
 ### Step 2：生成排版 HTML
 
-- **委托给 `frontend-design`** 做视觉设计与主题推导；本 skill 提供公众号兼容红线（下方「关键约束」）并验收。
+- **委托给 `frontend-design`** 做 HTML 视觉设计与主题推导（这是它的主场）；本 skill 提供公众号兼容红线（下方「关键约束」）并验收。
 - 参考 `references/layout-guide.md`：先按「① 通用方法论」从文章内容推导视觉主题，再套对应主题的组件与配色（档案体是案例之一，非唯一）。
 - 全内联样式，正文宽 677px，字号 14–15px，行高 1.85–1.9。
 - 图片处用 `<img src="__IMAGE_N__" alt="..." style="width:100%;border-radius:6px;display:block;" />`。
@@ -103,7 +120,8 @@ Markdown 文章 → ① 排版 HTML（内联 CSS，主题化） → ② 配图 S
 
 ### Step 3：生成配图
 
-- **委托给 `frontend-design`** 做 SVG 视觉创作；本 skill 负责溢出检测与中文渲染验证（这是本 skill 不可外委的质量把关）。
+- **配图生成无对口 skill，按「配图与裁剪的处理」执行**：先检测询问是否安装对口 skill，无则用「手写 SVG」兜底（当前已验证可行的做法）。
+- 本 skill 负责溢出检测与中文渲染验证（这是本 skill 不可外委的质量把关）。
 - SVG 手绘（黑匣子/档案/记录仪等主题），尺寸 900px 宽。
 - 用 `rsvg-convert -w 900 in.svg -o out.png` 转 PNG。
 - **⚠️ 必做：文字溢出检测**（详见 `references/layout-guide.md`「SVG 文字溢出检测」）。三步：① 用 macOS Vision OCR 定位每段文字边界框；② 判断 `x+w` 是否超画布/卡片；③ OCR 误报时用 Pillow 像素级复核。长英文词一律「中文大标题 + Menlo 11px 英文小字」，卡片并排先算坐标防重叠。
