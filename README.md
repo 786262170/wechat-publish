@@ -15,9 +15,10 @@
 
 ```
 wechat-publish/
-├── SKILL.md                 # 技能指令（触发条件 + 5 步工作流 + 6 条硬约束）
+├── SKILL.md                 # 技能指令（触发条件 + 6 步工作流 + 6 条硬约束）
 ├── scripts/
-│   └── auto-publish.py      # PicGo 上传 + 占位替换（三种调用方式）
+│   ├── auto-publish.py      # PicGo 上传 + 占位替换（三种调用方式）
+│   └── doctor.py            # 健康检查 + 首次使用引导（6 项体检）
 ├── references/
 │   └── layout-guide.md      # 排版设计指南（主题推导方法论 + 多主题案例 + SVG 溢出检测）
 └── README.md
@@ -58,6 +59,9 @@ cat SKILL.md >> ~/.codex/AGENTS.md
 ## 快速开始
 
 ```bash
+# 0. 首次使用：健康检查（会引导你配好 PicGo/图床/Server）
+python3 scripts/doctor.py
+
 # 1. 准备好排版 HTML（含 __IMAGE_N__ 占位）和配图 PNG
 # 2. 显式传参上传
 python3 scripts/auto-publish.py 排版.html 图片目录 "img1.png,img2.png,img3.png,img4.png"
@@ -67,6 +71,8 @@ python3 scripts/auto-publish.py 排版.html 图片目录
 
 # 4. 生成 *_final.html，浏览器打开 → Cmd+A → Cmd+C → 粘贴公众号编辑器
 ```
+
+`doctor.py` 会检查 6 项（PicGo 安装 / Server 监听 / 图床配置 / token 有效 / 仓库可访问 / 存储路径就绪），任何一项失败都会输出对应的修复指引，是首次使用的最佳入口。
 
 ## 许可证
 

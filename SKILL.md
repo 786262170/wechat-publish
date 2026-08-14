@@ -48,6 +48,13 @@ Markdown 文章 → ① 排版 HTML（内联 CSS，主题化） → ② 配图 S
 
 ## 步骤
 
+### Step 0：健康检查（首次使用必做）
+
+- 运行 `python3 scripts/doctor.py`，检查 6 项：PicGo 安装 / Server 监听 / 图床配置 / token 有效 / 仓库可访问 / 存储路径就绪。
+- 任何一项失败，脚本会输出对应修复指引（安装命令、开启 Server 步骤、生成 token 链接等）。**把指引转述给用户，引导其完成配置后重跑**，直到全绿。
+- 存储路径缺失时，可用 `python3 scripts/doctor.py --fix-img` 自动创建（或引导用户手动建目录）。
+- 若用户无 PicGo，跳过上传，退化为「图片上传公众号素材库拿 `mmbiz.qpic.cn` URL」手动方案。
+
 ### Step 1：撰写/获取文章
 
 - 文章本体存 `03_草稿/`，Markdown，带 YAML frontmatter（title/type/status/tags）。
@@ -74,6 +81,7 @@ Markdown 文章 → ① 排版 HTML（内联 CSS，主题化） → ② 配图 S
 
 ### Step 4：上传图床 + 替换占位
 
+- **先跑 `python3 scripts/doctor.py` 确认环境就绪**（全绿才继续；有失败则按指引引导用户修复）。
 - 用 `scripts/auto-publish.py`（需 PicGo 已配置图床并开启 Server，默认 `127.0.0.1:36677`）。
 - 脚本支持三种调用方式（见脚本 docstring）：显式传参 / 自动推断占位 / 环境变量。
 - 脚本自动：上传图片 → 拿 URL → 替换 `__IMAGE_N__` → 输出 `_final.html`。
