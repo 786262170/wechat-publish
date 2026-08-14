@@ -30,29 +30,56 @@ wechat-publish/
 
 ## 安装
 
-### DeepSeek Harness（DSH）
+本 skill 是标准 **SKILL.md 目录布局**，可在各主流 agent 工具间移植。核心内容（SKILL.md + scripts + references）100% 通用，只有「安装位置」因工具而异。
 
-把本目录放到 DSH 的用户 skill 根目录：
+### 各 Agent 安装位置一览
+
+| Agent 工具 | skill 目录 | 指令文件（可选） |
+|---|---|---|
+| DeepSeek Harness（DSH） | `~/.agents/skills/wechat-publish-0.1.0/` | 无需（文件 watcher 自动发现） |
+| Claude Code | `~/.claude/skills/wechat-publish/` | `~/.claude/CLAUDE.md` |
+| OpenAI Codex | `~/.codex/skills/wechat-publish/` | `~/.codex/AGENTS.md` |
+| OpenCode | `~/.config/opencode/skills/wechat-publish/` | `~/.config/opencode/AGENTS.md` |
+| Kimi Code | `~/.kimi-code/skills/wechat-publish/` | `~/.kimi-code/AGENTS.md` |
+| GitHub Copilot CLI | `~/.copilot/skills/wechat-publish/` | 无需修改 |
+| DeepSeek CLI（非 DSH） | `~/.deepseek/skills/wechat-publish/` | `~/.deepseek/AGENTS.md` |
+
+### 通用安装命令
+
+把本目录复制到对应工具的 skill 根目录即可（以目录名 `wechat-publish` 为例）：
 
 ```bash
-mkdir -p ~/.agents/skills
-cp -r wechat-publish ~/.agents/skills/wechat-publish-0.1.0
+# Claude Code
+mkdir -p ~/.claude/skills && cp -r wechat-publish ~/.claude/skills/
+
+# OpenAI Codex
+mkdir -p ~/.codex/skills && cp -r wechat-publish ~/.codex/skills/
+
+# OpenCode
+mkdir -p ~/.config/opencode/skills && cp -r wechat-publish ~/.config/opencode/skills/
+
+# Kimi Code
+mkdir -p ~/.kimi-code/skills && cp -r wechat-publish ~/.kimi-code/skills/
+
+# DeepSeek Harness（DSH）
+mkdir -p ~/.agents/skills && cp -r wechat-publish ~/.agents/skills/wechat-publish-0.1.0
 ```
 
-DSH 的文件系统 watcher 会自动发现新 skill（无需重启）。触发词见 SKILL.md 的 description。
+### 需要额外激活的工具
 
-### Codex CLI
-
-Codex 不自动扫描 `~/.agents/skills/`，需把 skill 指令合并进 AGENTS.md：
+部分工具的 skill 目录**不是自动扫描**的，需要在指令文件里加一行引用：
 
 ```bash
-# 全局 AGENTS.md（或项目级 AGENTS.md）
-cat SKILL.md >> ~/.codex/AGENTS.md
+# Claude Code：追加到 ~/.claude/CLAUDE.md
+echo '在发布公众号文章时，加载 wechat-publish skill（~/.claude/skills/wechat-publish/SKILL.md）。' >> ~/.claude/CLAUDE.md
+
+# Codex / OpenCode / Kimi：追加到各自的 AGENTS.md
+echo '在发布公众号文章时，加载 wechat-publish skill。' >> ~/.codex/AGENTS.md
+echo '在发布公众号文章时，加载 wechat-publish skill。' >> ~/.config/opencode/AGENTS.md
+echo '在发布公众号文章时，加载 wechat-publish skill。' >> ~/.kimi-code/AGENTS.md
 ```
 
-脚本路径指向 `scripts/auto-publish.py` 即可，脚本是纯 Python 标准库，Codex 的 bash 工具可直接运行。
-
-> 提示：SKILL.md 的「内容」与「脚本」100% 跨 runtime 通用，只有「自动发现」这一层需要按各 runtime 的约定接入（DSH 自动扫描，Codex 走 AGENTS.md，Claude Code 走 `~/.claude/skills/`）。
+> 说明：DSH 的 `~/.agents/skills/` 由文件系统 watcher 自动发现；Claude Code / Codex / OpenCode 等工具的 skill 目录同样支持目录式安装，只是各工具对「何时加载」的触发方式略有差异（部分需要指令文件里显式引用）。
 
 ### 前置依赖
 
